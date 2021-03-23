@@ -5,3 +5,5 @@ QuPath-0.2.3/
 weights/
 weights-self/
 WSI/
+.ipynb_checkpoints/
+__pycache__/
