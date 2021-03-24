@@ -20,11 +20,13 @@ class Pair_Dataset(Dataset):
         return len(self.files_list)
 
     def __getitem__(self, idx):             
-        img_name = self.files_list.iloc[idx, 0]
-        img = exposure.adjust_gamma(io.imread(img_name), 0.5)
-        img = exposure.rescale_intensity(img_as_float(img), in_range=(0.075, 1), out_range=(0, 1))
+        img = io.imread(self.files_list.iloc[idx, 0])
         if img.shape[0] != 512 or img.shape[1] != 512:
-            img = transform.resize(img, (512, 512), order=1, anti_aliasing=False)
+            img = exposure.rescale_intensity(img_as_float(img), in_range=(0.1, 1), out_range=(0, 1))
+# #             img = transform.resize(img, (512, 512), order=1, anti_aliasing=False)
+        else:
+            img = exposure.rescale_intensity(img_as_float(img), in_range=(0.02, 1), out_range=(0, 1))
+        img = exposure.adjust_gamma(img, 0.5)
         sample = {'input': img, 'output': img}
         if self.transform:
             sample = self.transform(sample)
@@ -83,17 +85,20 @@ def show_patch(dataloader, index = 0, img_channel=1):
             plt.axis('off')
             break
             
-def generate_compress_csv(dataset_name='TMA'):
-    imgs = glob.glob(os.path.join('data', dataset_name, '*', '*', '*.png'))
+def generate_compress_csv(dataset_name='TMA', resolution='256'):
+    if resolution == '256':
+        imgs = glob.glob(os.path.join('data', dataset_name, 'input', '*', '*.png'))
+    if resolution == '512':
+        imgs = glob.glob(os.path.join('data', dataset_name, 'target', '*', '*.png'))
     imgs_df = pd.DataFrame(imgs)
     imgs_df = imgs_df.sample(frac=1).reset_index(drop=True)
     train_df = pd.DataFrame(imgs_df[0:int(0.8*len(imgs_df))])
     valid_df = pd.DataFrame(imgs_df[int(0.8*len(imgs_df)):])
-    train_df.to_csv(os.path.join('data', dataset_name, 'self-train.csv'), index=False)
-    valid_df.to_csv(os.path.join('data', dataset_name, 'self-valid.csv'), index=False)
+    train_df.to_csv(os.path.join('data', dataset_name, 'single-self-train.csv'), index=False)
+    valid_df.to_csv(os.path.join('data', dataset_name, 'single-self-valid.csv'), index=False)
     
 def compress_csv_path(csv='train', dataset_name='TMA'):
     if csv =='train':
-        return os.path.join('data', dataset_name, 'self-train.csv')
+        return os.path.join('data', dataset_name, 'single-self-train.csv')
     if csv =='valid':
-        return os.path.join('data', dataset_name, 'self-valid.csv')
+        return os.path.join('data', dataset_name, 'single-self-valid.csv')
