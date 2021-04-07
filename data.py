@@ -155,6 +155,8 @@ def show_patch(dataloader, index = 0, img_channel=1):
 def generate_compress_csv(dataset_name='TMA'):
     in_imgs = glob.glob(os.path.join('data', dataset_name, 'input', '*', '*.png'))
     out_imgs = glob.glob(os.path.join('data', dataset_name, 'target', '*', '*.png'))
+    in_imgs.sort()
+    out_imgs.sort()
     in_imgs_df = pd.DataFrame(in_imgs)
     out_imgs_df = pd.DataFrame(out_imgs)
     imgs_df = pd.concat((in_imgs_df, out_imgs_df), axis=1, ignore_index=True)

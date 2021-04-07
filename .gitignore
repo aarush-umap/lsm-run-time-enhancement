@@ -12,3 +12,4 @@ __pycache__/
 */.ipynb_checkpoints/*
 */__pycache__/*
 __pycache__
+weights-self-0.02/

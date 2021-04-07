@@ -94,11 +94,21 @@ def generate_compress_csv(dataset_name='TMA', resolution='256'):
     imgs_df = imgs_df.sample(frac=1).reset_index(drop=True)
     train_df = pd.DataFrame(imgs_df[0:int(0.8*len(imgs_df))])
     valid_df = pd.DataFrame(imgs_df[int(0.8*len(imgs_df)):])
-    train_df.to_csv(os.path.join('data', dataset_name, 'single-self-train.csv'), index=False)
-    valid_df.to_csv(os.path.join('data', dataset_name, 'single-self-valid.csv'), index=False)
+    if resolution == '256':
+        train_df.to_csv(os.path.join('data', dataset_name, 'single-self-train.csv'), index=False)
+        valid_df.to_csv(os.path.join('data', dataset_name, 'single-self-valid.csv'), index=False)
+    if resolution == '512':
+        train_df.to_csv(os.path.join('data', dataset_name, 'single-self-512-train.csv'), index=False)
+        valid_df.to_csv(os.path.join('data', dataset_name, 'single-self-512-valid.csv'), index=False)
     
-def compress_csv_path(csv='train', dataset_name='TMA'):
-    if csv =='train':
-        return os.path.join('data', dataset_name, 'single-self-train.csv')
-    if csv =='valid':
-        return os.path.join('data', dataset_name, 'single-self-valid.csv')
+def compress_csv_path(csv='train', dataset_name='TMA', resolution='256'):
+    if resolution=='256':
+        if csv =='train':
+            return os.path.join('data', dataset_name, 'single-self-train.csv')
+        if csv =='valid':
+            return os.path.join('data', dataset_name, 'single-self-valid.csv')
+    if resolution=='512':
+        if csv =='train':
+            return os.path.join('data', dataset_name, 'single-self-512-train.csv')
+        if csv =='valid':
+            return os.path.join('data', dataset_name, 'single-self-512-valid.csv')
