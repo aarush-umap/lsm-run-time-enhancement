@@ -25,7 +25,6 @@ class Pair_Dataset(Dataset):
             img = exposure.rescale_intensity(img_as_float(img), in_range=(0.1, 0.9), out_range=(0, 1))
         else:
             img = exposure.rescale_intensity(img_as_float(img), in_range=(0.2, 0.8), out_range=(0, 1))
-#         img = exposure.adjust_gamma(img, 0.5)
         sample = {'input': img, 'output': img}
         if self.transform:
             sample = self.transform(sample)
@@ -70,44 +69,25 @@ def show_patch(dataloader, index = 0, img_channel=1):
             im_size = input_batch.size(2)
             plt.figure(figsize=(20, 10))
             grid = utils.make_grid(input_batch)
-#             if img_channel==3:
             plt.imshow(grid.numpy().transpose((1, 2, 0)), interpolation='bicubic')  
-#             if img_channel==1:
-#                 plt.imshow(grid.numpy(), interpolation='bicubic')
             plt.axis('off')
             plt.figure(figsize=(20, 10))
             grid = utils.make_grid(output_batch)
-#             if img_channel==3:
             plt.imshow(grid.numpy().transpose((1, 2, 0)), interpolation='bicubic')
-#             if img_channel==1:
-#                 plt.imshow(grid.numpy(), interpolation='bicubic')
             plt.axis('off')
             break
             
-def generate_compress_csv(dataset_name='TMA', resolution='256'):
-    if resolution == '256':
-        imgs = glob.glob(os.path.join('data', dataset_name, 'input', '*.png'))
-    if resolution == '512':
-        imgs = glob.glob(os.path.join('data', dataset_name, 'target', '*.png'))
+def generate_compress_csv(resolution=256):
+    imgs = glob.glob(os.path.join('data', str(resolution), 'noisy', '*.png'))
     imgs_df = pd.DataFrame(imgs)
     imgs_df = imgs_df.sample(frac=1).reset_index(drop=True)
     train_df = pd.DataFrame(imgs_df[0:int(0.8*len(imgs_df))])
     valid_df = pd.DataFrame(imgs_df[int(0.8*len(imgs_df)):])
-    if resolution == '256':
-        train_df.to_csv(os.path.join('data', dataset_name, 'single-self-train.csv'), index=False)
-        valid_df.to_csv(os.path.join('data', dataset_name, 'single-self-valid.csv'), index=False)
-    if resolution == '512':
-        train_df.to_csv(os.path.join('data', dataset_name, 'single-self-512-train.csv'), index=False)
-        valid_df.to_csv(os.path.join('data', dataset_name, 'single-self-512-valid.csv'), index=False)
+    train_df.to_csv(os.path.join('data', str(resolution), 'single-self-train.csv'), index=False)
+    valid_df.to_csv(os.path.join('data', str(resolution), 'single-self-valid.csv'), index=False)
     
-def compress_csv_path(csv='train', dataset_name='TMA', resolution='256'):
-    if resolution=='256':
-        if csv =='train':
-            return os.path.join('data', dataset_name, 'single-self-train.csv')
-        if csv =='valid':
-            return os.path.join('data', dataset_name, 'single-self-valid.csv')
-    if resolution=='512':
-        if csv =='train':
-            return os.path.join('data', dataset_name, 'single-self-512-train.csv')
-        if csv =='valid':
-            return os.path.join('data', dataset_name, 'single-self-512-valid.csv')
+def compress_csv_path(csv='train', resolution=256):
+    if csv =='train':
+        return os.path.join('data', str(resolution), 'single-self-train.csv')
+    if csv =='valid':
+        return os.path.join('data', str(resolution), 'single-self-valid.csv')
