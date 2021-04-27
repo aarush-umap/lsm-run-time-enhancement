@@ -94,7 +94,7 @@ class Generator(nn.Module):
         self.up0 = UpBlock(base_channel*16, base_channel*8, norm=None)
         self.up1 = UpBlock(base_channel*16, base_channel*4, norm=None)
         self.up2 = UpBlock(base_channel*8, base_channel*2, norm=None)
-        self.up3 = PixBlock(base_channel*4, in_channel, norm=None)        
+        self.up3 = UpBlock(base_channel*4, in_channel, norm=None)        
         self.skip0 = ConvBlock(base_channel*2, base_channel*4)
         self.skip1 = ConvBlock(base_channel*4, base_channel*8)
         self.skip2 = ConvBlock(base_channel*8, base_channel*16)
