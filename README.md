@@ -22,3 +22,10 @@ Otherwise, you could put individual `.png` images inside `data/[RESOLUTION]` fol
 ### Training and testing
 Open `train-denoising.ipynb`. Exceuting the training loop after adjusting parameters and viewing example images from the dataset. Once the training is done, use the testing loop to see results on the validation set. Output images will be printed in folder `print`. Model weights are saved in `model-weights`.  
 
+# Training SISR model
+### Prepare datasets
+Put input `.png` images inside `data/SISR/input` folder and target `.png` images inside `data/SISR/Target` folder.  
+
+### Training and testing
+Open `train-SISR.ipynb`. Exceuting the training loop after adjusting parameters and viewing example images from the dataset. Once the training is done, use the testing loop to see results on the validation set. Output images will be printed in folder `print-sr`. Model weights are saved in `model-weights`.  
+

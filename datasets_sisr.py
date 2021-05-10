@@ -19,12 +19,14 @@ class Pair_Dataset(Dataset):
         return len(self.files_list)
 
     def __getitem__(self, idx):             
-        img = io.imread(self.files_list.iloc[idx, 0])
-        if img.shape[0] == 512 or img.shape[1] == 512:
-            img = exposure.rescale_intensity(img_as_float(img), in_range=(0.1, 0.9), out_range=(0, 1))
-        else:
-            img = exposure.rescale_intensity(img_as_float(img), in_range=(0.2, 0.8), out_range=(0, 1))
-        sample = {'input': img, 'output': img}
+        in_img_name = self.files_list.iloc[idx, 0]
+        out_img_name = self.files_list.iloc[idx, 1]
+        in_img = io.imread(in_img_name)
+        out_img = io.imread(out_img_name)
+        out_img = exposure.rescale_intensity(img_as_float(out_img), in_range=(0.1, 0.9), out_range=(0, 1))
+        in_img = Image.fromarray(in_img)
+        out_img = Image.fromarray(out_img)
+        sample = {'input': in_img, 'output': out_img}
         if self.transform:
             sample = self.transform(sample)
         return sample
@@ -46,13 +48,16 @@ class Compose(object):
         format_string += '\n)'
         return format_string 
     
-class Drop(object):
-    def __init__(self, drop_mask=None):
-        self.output_size = drop_mask
+class Recale(object):
+    def __init__(self, output_size):
+        assert isinstance(output_size, (int, tuple))
+        self.output_size = output_size
 
     def __call__(self, sample):
         in_img = sample['input']
-        out_img = np.multiply(in_img, drop_mask)
+        out_img = sample['output']
+        rescale = transforms.Resize(self.output_size)
+        in_img = rescale(in_img)
         return {'input': in_img, 'output': out_img}
 
 class ToTensor(object):
@@ -76,17 +81,22 @@ def show_patch(dataloader, index = 0, img_channel=1):
             plt.axis('off')
             break
             
-def generate_compress_csv(resolution=256):
-    imgs = glob.glob(os.path.join('data', str(resolution), 'noisy', '*.png'))
-    imgs_df = pd.DataFrame(imgs)
+def generate_compress_csv():
+    in_imgs = glob.glob(os.path.join('data', 'SISR', 'input', '*', '*.png'))
+    out_imgs = glob.glob(os.path.join('data', 'SISR', 'target', '*', '*.png'))
+    in_imgs.sort()
+    out_imgs.sort()
+    in_imgs_df = pd.DataFrame(in_imgs)
+    out_imgs_df = pd.DataFrame(out_imgs)
+    imgs_df = pd.concat((in_imgs_df, out_imgs_df), axis=1, ignore_index=True)
     imgs_df = imgs_df.sample(frac=1).reset_index(drop=True)
     train_df = pd.DataFrame(imgs_df[0:int(0.8*len(imgs_df))])
     valid_df = pd.DataFrame(imgs_df[int(0.8*len(imgs_df)):])
-    train_df.to_csv(os.path.join('data', str(resolution), 'single-self-train.csv'), index=False)
-    valid_df.to_csv(os.path.join('data', str(resolution), 'single-self-valid.csv'), index=False)
+    train_df.to_csv(os.path.join('data', 'SISR', 'train.csv'), index=False)
+    valid_df.to_csv(os.path.join('data', 'SISR', 'valid.csv'), index=False)
     
-def compress_csv_path(csv='train', resolution=256):
+def compress_csv_path(csv='train'):
     if csv =='train':
-        return os.path.join('data', str(resolution), 'single-self-train.csv')
+        return os.path.join('data', 'SISR', 'train.csv')
     if csv =='valid':
-        return os.path.join('data', str(resolution), 'single-self-valid.csv')
+        return os.path.join('data', 'SISR', 'valid.csv')
