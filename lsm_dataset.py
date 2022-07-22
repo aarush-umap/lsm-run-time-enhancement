@@ -8,6 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 import torch
 import torchvision.transforms.functional as F
+from lsm_utils import screen_background
 
 
 
@@ -59,7 +60,7 @@ def show_patch(dataloader, index=0, int_type=True):
             break   
 
             
-def generate_compress_csv(dataset='data-flim', ext='tif', split=0.95):
+def generate_compress_csv(dataset='data-flim', ext='tif', split=0.95, exclude_bg=True):
     """Generate csv files containing the training and validation images
     
     Args:
@@ -71,6 +72,10 @@ def generate_compress_csv(dataset='data-flim', ext='tif', split=0.95):
         train_csv_path (string): Training CSV file path. valid_csv_pathc (string): Validation CSV file path. 
     """
     imgs = glob.glob(os.path.join(dataset, '*.'+ext))
+    if exclude_bg:
+        print('Screening background...')
+        exclude_names = screen_background(imgs)
+        imgs = [i for i in imgs if os.path.basename(i) not in exclude_names]
     imgs_df = pd.DataFrame(imgs)
     imgs_df = imgs_df.sample(frac=1).reset_index(drop=True)
     train_df = pd.DataFrame(imgs_df)

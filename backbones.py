@@ -113,17 +113,18 @@ class Discriminator(nn.Module):
             return layers
 
         self.model = nn.Sequential(
-            *discriminator_block(in_channels, 16), # 128
-            *discriminator_block(16, 32), # 64
-            *discriminator_block(32, 64), # 32
-            *discriminator_block(64, 128), # 16
-            *discriminator_block(128, 256), # 8
+            *discriminator_block(in_channels*2, 16), # 256
+            *discriminator_block(16, 32), # 128
+            *discriminator_block(32, 64), # 64
+            *discriminator_block(64, 128), # 32
+            *discriminator_block(128, 256), # 16
+            *discriminator_block(256, 256), # 8
             nn.Conv2d(256, 1, 3, 1, 1),
-            nn.AdaptiveAvgPool2d((8, 8)),
+            nn.AdaptiveAvgPool2d((4, 4)),
         )
 
-    def forward(self, x):
-        x = self.model(x)
+    def forward(self, x, ref):
+        x = self.model(torch.cat((x, ref), 1))
         return x
 
 

@@ -1,0 +1,22 @@
+gpu : True
+iterations : 300000
+iter-per-epoch : 300
+batch-size : 16
+learning-rate : 0.0002
+image-channel : 1
+blindspot-rate : 0.05
+average-factor : 50
+resolution : 512
+up-scale-factor : 2
+cnn-base-channel : 8
+norm-range : [0, 65535]
+image-extension : tif
+threads : 32
+test-interval : 10
+loss-gain : 100
+gan-lambda : 0.1
+percep-lambda : 0.01
+adv-interval : 10
+only-pixel-loss : False
+dataset : 'datasets/PA_2081b/test'
+load-weights : null

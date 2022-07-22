@@ -68,7 +68,7 @@ class Enhancer(nn.Module):
 
         if self.config['gpu']: self.cuda()
 
-        mydir = os.path.join('model_weights', datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+        mydir = os.path.join('model_weights', 'supervised'+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         os.makedirs(mydir, exist_ok=True)
         self.weights_dir = mydir
 
@@ -77,14 +77,16 @@ class Enhancer(nn.Module):
         config = self.config
         input_fnames = glob(path.join(config['dataset'], 'input', '*.'+config['image-extension']))
         target_fnames = glob(path.join(config['dataset'], 'target', '*.'+config['image-extension']))
+        n_pairs = len(input_fnames)
         if exclude_bg:
             print('Screening background...')
             exclude_names = screen_background((input_fnames+target_fnames))
             input_fnames = [i for i in input_fnames if os.path.basename(i) not in exclude_names]
             target_fnames = [i for i in target_fnames if os.path.basename(i) not in exclude_names]
             assert len(input_fnames)==len(target_fnames)
-        pair_fnams = list(zip(input_fnames, target_fnames))
-        train_loader, valid_loader = prepare_train_valid_loader(pair_fnams, config['norm-range'], 0.95, config['batch-size'], config['threads'])
+        pair_fnames = list(zip(input_fnames, target_fnames))
+        print(f'All image pairs: {n_pairs}, Remaining image pairs: {len(pair_fnames)}')
+        train_loader, valid_loader = prepare_train_valid_loader(pair_fnames, config['norm-range'], 0.95, config['batch-size'], config['threads'])
         self.valid_dataloader = valid_loader
         self.train_dataloader = train_loader
         self.valid_list = input_fnames
@@ -134,9 +136,9 @@ class Enhancer(nn.Module):
                 loss_pixel = config['percep-lambda']*perceptual_loss + loss_pixel   
                 perceptual_epoch_loss += perceptual_loss.item()  
             if self.adversarial_loss:
-                valid = torch.tensor(np.ones((input.shape[0], config['image-channel'], 8, 8)), requires_grad=False, device=device, dtype=torch.float32)
-                fake = torch.tensor(np.zeros((input.shape[0], config['image-channel'], 8, 8)), requires_grad=False, device=device, dtype=torch.float32)
-                pred_fake = self.discriminator(output)
+                valid = torch.tensor(np.ones((input.shape[0], config['image-channel'], 4, 4)), requires_grad=False, device=device, dtype=torch.float32)
+                fake = torch.tensor(np.zeros((input.shape[0], config['image-channel'], 4, 4)), requires_grad=False, device=device, dtype=torch.float32)
+                pred_fake = self.discriminator(output, input)
                 loss_g = self.criterion_gan(pred_fake, valid)
                 loss_pixel = config['gan-lambda']*loss_g + loss_pixel
                 g_epoch_loss += loss_g.item()           
@@ -147,8 +149,8 @@ class Enhancer(nn.Module):
                 print(f'[{epoch}/{total_epoch}] [{iteration}/{n_iter}] Loss: {loss_pixel.item()}, Loss perceptual: {perceptual_loss.item()}', end='\r')
             elif self.adversarial_loss and (iteration % config['adv-interval']==0):
                 self.optimizer_d.zero_grad()
-                pred_real = self.discriminator(target)
-                pred_fake = self.discriminator(output.detach())
+                pred_real = self.discriminator(target, input)
+                pred_fake = self.discriminator(output.detach(), input)
                 loss_d = 0.5 * (self.criterion_gan(pred_real, valid) + self.criterion_gan(pred_fake, fake))
                 d_epoch_loss += loss_d.item()
                 loss_d.backward()
@@ -189,14 +191,14 @@ class Enhancer(nn.Module):
                 if self.adversarial_loss:
                     valid = torch.tensor(np.ones((input.shape[0], config['image-channel'], 8, 8)), requires_grad=False, device=device, dtype=torch.float32)
                     fake = torch.tensor(np.zeros((input.shape[0], config['image-channel'], 8, 8)), requires_grad=False, device=device, dtype=torch.float32)
-                    pred_fake = self.discriminator(output)
+                    pred_fake = self.discriminator(output, input)
                     loss_g = self.criterion_gan(pred_fake, valid)
                     loss_pixel = config['gan-lambda']*loss_g + loss_pixel
                     g_epoch_loss += loss_g.item() 
                 epoch_loss = epoch_loss + loss_pixel.item()
                 if self.adversarial_loss:
-                    pred_real = self.discriminator(input)
-                    pred_fake = self.discriminator(output.detach())
+                    pred_real = self.discriminator(target, input)
+                    pred_fake = self.discriminator(output.detach(), input)
                     loss_d = 0.5 * (self.criterion_gan(pred_real, valid) + self.criterion_gan(pred_fake, fake))
                     d_epoch_loss += loss_d.item()
             if self.perceptual_loss:
@@ -209,6 +211,8 @@ class Enhancer(nn.Module):
                 self.log_adv_g.append((g_epoch_loss/len(dataloader), epoch))
                 self.log_adv_d.append((d_epoch_loss/len(dataloader), epoch))
             self.log_loss.append((epoch_loss/len(dataloader), epoch))
+            
+            
 
     def write_log(self, write_train=True):
         if write_train:
@@ -221,6 +225,14 @@ class Enhancer(nn.Module):
             self.writer.add_scalar('Loss/discriminator', self.log_adv_d[-1][0], self.log_adv_d[-1][1])
         self.writer.add_scalar('Metric/FID', self.log_fid[-1][0], self.log_fid[-1][1])
         self.writer.add_scalar('Metric/PSNR', self.log_psnr[-1][0], self.log_psnr[-1][1])
+        
+        
+        
+    def save_models(self):
+        torch.save(self.backbone.state_dict(), os.path.join(self.weights_dir, 'g.pth'))
+        if self.adversarial_loss:
+            torch.save(self.discriminator.state_dict(), os.path.join(self.weights_dir, 'd.pth'))
+            
 
 
     def train(self, write_log=False, valid_r=0.2):
@@ -280,7 +292,21 @@ class Enhancer(nn.Module):
                     target_arr = exposure.rescale_intensity(target_arr, in_range=(config['norm-range'][0], config['norm-range'][1]), out_range=(0, 65535)).astype(int)
                     io.imsave(os.path.join(target_path, img_name), img_as_uint(target_arr))
                 print(f'Processed [{idx+1}/{len(input_images)}]', end='\r')
-
+                
+    
+    def compute(self, img_arr):
+        with torch.no_grad():
+            config = self.config
+            model = self.backbone
+            device = next(model.parameters()).device
+            img_arr = img_as_uint(img_arr)
+            img_arr = exposure.rescale_intensity(img_arr, in_range=(config['norm-range'][0], config['norm-range'][1]), out_range=(0, 65535)).astype(int)
+            img_input = exposure.rescale_intensity(1.0*img_arr, in_range=(0, 65535), out_range=(0, 1))
+            img_tensor = torch.from_numpy(img_input)[None, None, :, :].float().to(device)
+            prediction = model(img_tensor)
+            out_arr = img_as_uint(np.clip(prediction.cpu().numpy().squeeze(), 0, 1))
+            return out_arr
+            
 
     def psnr(self, epoch):
         print('Computing PSNR...')
@@ -308,10 +334,4 @@ class Enhancer(nn.Module):
             num_workers=config['threads'],
             )
         self.log_fid.append((fidscore, epoch))
-
-
-    def save_models(self):
-        torch.save(self.backbone.state_dict(), os.path.join(self.weights_dir, 'g.pth'))
-        if self.adversarial_loss:
-            torch.save(self.discriminator.state_dict(), os.path.join(self.weights_dir, 'd.pth'))
 

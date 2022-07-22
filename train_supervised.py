@@ -1,12 +1,12 @@
-import yaml
-from enhancer import Enhancer
-from lsm_utils import compute_norm_range
 import os
-import torch
-
+import yaml
 
 if __name__ == '__main__':
-
+    os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+    import torch
+    from enhancer import Enhancer
+    from lsm_utils import compute_norm_range
+    
     config = yaml.load(open("model_config.yaml", "r"), Loader=yaml.FullLoader)
     print('Computing normalization range for 16-bit data.')
     vmin_t, vmax_t, fail_names_t = compute_norm_range(config['dataset'] + os.sep+ 'target', ext='tif', percentiles=(1, 99.5), sample_r=0.05)
@@ -23,6 +23,6 @@ if __name__ == '__main__':
 
     if config['load-weights'] is not None:
         enhancer.backbone.load_state_dict(torch.load(os.path.join('model_weights', config['load-weights'], 'g.pth')))
-        enhancer.discriminator.load_state_dict(torch.load(os.path.join('model_weights', config['load-weights'], 'd.pth')))
+        # enhancer.discriminator.load_state_dict(torch.load(os.path.join('model_weights', config['load-weights'], 'd.pth')))
 
-    enhancer.train(write_log=True)
+    enhancer.train(write_log=True, valid_r=0.1)

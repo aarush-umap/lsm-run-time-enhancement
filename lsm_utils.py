@@ -7,7 +7,7 @@ from skimage import io, img_as_uint, exposure, transform
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision.models import inception_v3, vgg16
+from torchvision.models import inception_v3, vgg16, VGG16_Weights
 from torchvision.models.feature_extraction import create_feature_extractor
 from torchvision import transforms
 from pycromanager import Dataset as PDataset
@@ -44,12 +44,20 @@ def process_pmm_datasets(data_folder, out_folder, n_z=4):
     os.makedirs(out_folder, exist_ok=True)
     training_data = glob(path.join(data_folder, '*/'))
     for data_path in tqdm(training_data):
-        dataset = PDataset(data_path)
+        img_name = data_path.split(os.sep)[-2]
+        r_id = img_name.rfind('_')
+        img_name = img_name[:r_id]
+        try:
+            dataset = PDataset(data_path)
+        except:
+            print('Open dataset failed: ' + data_path)
         d_array = dataset.as_array(stitched=False).squeeze()
-        if d_array.shape[0] != n_z: print('Dataset z slice number does not match.')
+        if d_array.shape[0] != n_z: 
+            print('Dataset z slice number does not match. Swaping dimensions')
+            d_array = d_array.transpose(1, 0, 2, 3)
         for i in range(d_array.shape[1]):
             for z in range(d_array.shape[0]):
-                save_fname = path.join(out_folder, data_path.split(os.sep)[-2]+f'---{i}---{z}.tif')
+                save_fname = path.join(out_folder, img_name+f'---{i}---{z}.tif')
                 io.imsave(save_fname, d_array[z, i], check_contrast=False)
 
 
@@ -68,22 +76,27 @@ def normalize_16bit_images(data_folder, out_folder, ext, percentiles=(0, 100)):
 def screen_background(fnames, background_frac=0.1):
     sampled = random.sample(fnames, min(5000, len(fnames)))
     intensities = []
+    remove_list = []
     for fname in sampled:
         arr = io.imread(fname)
-        mask = arr > (threshold_otsu(arr))
-        arr = arr * mask
-        intensity = np.sum(arr) / np.count_nonzero(mask)
-        intensities.append(intensity)
-    threshold = np.mean(np.array(intensities))
-    remove_list = []
+        if np.sum(arr) == 0: continue
+        else:
+            mask = arr > (threshold_otsu(arr))
+            arr = arr * mask
+            intensity = np.sum(arr) / (1+np.count_nonzero(mask))
+            intensities.append(intensity)
+    threshold = 0.8*np.mean(np.array(intensities)) + 0.2*np.min(np.array(intensities))
     for fname in tqdm(fnames):
         arr = io.imread(fname)
-        mask = arr > (threshold_otsu(arr))
-        arr = arr * mask
-        intensity = np.sum(arr) / np.count_nonzero(mask)
-        if intensity < threshold:
-            if np.random.uniform(0, 1)>background_frac:
-                remove_list.append(fname)
+        if np.sum(arr) == 0:
+            remove_list.append(fname)
+        else:
+            mask = arr > (threshold_otsu(arr))
+            arr = arr * mask
+            intensity = np.sum(arr) / (1+np.count_nonzero(mask))
+            if intensity < threshold:
+                if np.random.uniform(0, 1)>background_frac:
+                    remove_list.append(fname)
     remove_name_list = list(set([os.path.basename(i) for i in remove_list]))
     return remove_name_list
 
@@ -99,9 +112,9 @@ def eval_psnr(fnames, ref_fnames):
     return np.mean(np.asarray(psnr))
 
 
-def eval_FID(dir, ref_dir, device='cpu', threads=0):
+def eval_FID(in_dir, ref_dir, device='cpu', threads=0):
     fidscore = calculate_fid_given_paths(
-        (dir, ref_dir), 
+        (in_dir, ref_dir), 
         batch_size=8, 
         device=device,
         dims=2048,
@@ -154,7 +167,7 @@ class PerceptualLoss(nn.Module):
     def __init__(self):
         super(PerceptualLoss, self).__init__()
 
-        vgg = vgg16(pretrained=True).type(torch.float32)
+        vgg = vgg16(weights=VGG16_Weights.DEFAULT).type(torch.float32)
         vgg.classifier = nn.Identity()
         self.feature_layers = {'features.15' : 'feat1', 'features.22' : 'feat2', 'features.29' : 'feat3'}
         feature_extractor = create_feature_extractor(vgg, self.feature_layers)

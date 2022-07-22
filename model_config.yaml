@@ -1,8 +1,8 @@
 gpu : True
-iterations : 80000
-iter-per-epoch : 600
+iterations : 50000
+iter-per-epoch : 500
 batch-size : 8
-learning-rate : 0.0002
+learning-rate : 0.0001
 image-channel : 1
 blindspot-rate : 0.05
 average-factor : 50
@@ -11,12 +11,12 @@ up-scale-factor : 2
 cnn-base-channel : 8
 norm-range : [0, 65535]
 image-extension : tif
-threads : 8
-test-interval : 1
-loss-gain : 100
-gan-lambda : 2
-percep-lambda : 0.05
-adv-interval : 5
+threads : 32
+test-interval : 5
+loss-gain : 1000
+gan-lambda : 5
+percep-lambda : 0.2
+adv-interval : 1
 only-pixel-loss : False
-dataset : 'datasets/PA_2081b_part2'
-load-weights : '2022-07-16_19-15-40'
+dataset : 'datasets/PA_2081b'
+load-weights : 'supervised2022-07-21_10-17-29'
