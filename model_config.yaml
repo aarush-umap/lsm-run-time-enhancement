@@ -1,22 +1,27 @@
-gpu : True
-iterations : 50000
-iter-per-epoch : 500
-batch-size : 8
-learning-rate : 0.0001
-image-channel : 1
-blindspot-rate : 0.05
-average-factor : 50
-resolution : 512
-up-scale-factor : 2
-cnn-base-channel : 8
-norm-range : [0, 65535]
-image-extension : tif
-threads : 32
-test-interval : 5
-loss-gain : 1000
-gan-lambda : 5
-percep-lambda : 0.2
-adv-interval : 1
-only-pixel-loss : False
-dataset : 'datasets/PA_2081b'
-load-weights : 'supervised2022-07-21_10-17-29'
+adv-interval: 5
+average-factor: 50
+batch-size: 8
+blindspot-rate: 0.05
+cnn-base-channel: 8
+dataset: datasets/PA_2081b
+gan-lambda: 2
+gpu: true
+image-channel: 1
+image-extension: tif
+iter-per-epoch: 250
+iterations: 50000
+learning-rate: 0.0001
+load-weights: null
+loss-gain: 1000
+norm-range:
+- 5420
+- 44945
+norm-range-target:
+- 6265
+- 38565
+only-pixel-loss: true
+percep-lambda: 0.2
+resolution: 512
+test-interval: 5
+threads: 32
+up-scale-factor: 2

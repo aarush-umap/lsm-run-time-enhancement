@@ -61,8 +61,6 @@ class Enhancer(nn.Module):
             self.perceptual = PerceptualLoss()
         self.perceptual_loss = perceptual_loss
 
-        self.configure_dataset()
-        self.configure_optimizer()
         self.criterion = nn.L1Loss(reduction='none')
         self.alpha = config['loss-gain']
 
@@ -86,7 +84,7 @@ class Enhancer(nn.Module):
             assert len(input_fnames)==len(target_fnames)
         pair_fnames = list(zip(input_fnames, target_fnames))
         print(f'All image pairs: {n_pairs}, Remaining image pairs: {len(pair_fnames)}')
-        train_loader, valid_loader = prepare_train_valid_loader(pair_fnames, config['norm-range'], 0.95, config['batch-size'], config['threads'])
+        train_loader, valid_loader = prepare_train_valid_loader(pair_fnames, config['norm-range'], config['norm-range-target'], 0.95, config['batch-size'], config['threads'])
         self.valid_dataloader = valid_loader
         self.train_dataloader = train_loader
         self.valid_list = input_fnames
@@ -189,8 +187,8 @@ class Enhancer(nn.Module):
                     loss_pixel = config['percep-lambda']*perceptual_loss + loss_pixel  
                     perceptual_epoch_loss += perceptual_loss.item()
                 if self.adversarial_loss:
-                    valid = torch.tensor(np.ones((input.shape[0], config['image-channel'], 8, 8)), requires_grad=False, device=device, dtype=torch.float32)
-                    fake = torch.tensor(np.zeros((input.shape[0], config['image-channel'], 8, 8)), requires_grad=False, device=device, dtype=torch.float32)
+                    valid = torch.tensor(np.ones((input.shape[0], config['image-channel'], 4, 4)), requires_grad=False, device=device, dtype=torch.float32)
+                    fake = torch.tensor(np.zeros((input.shape[0], config['image-channel'], 4, 4)), requires_grad=False, device=device, dtype=torch.float32)
                     pred_fake = self.discriminator(output, input)
                     loss_g = self.criterion_gan(pred_fake, valid)
                     loss_pixel = config['gan-lambda']*loss_g + loss_pixel
@@ -236,6 +234,8 @@ class Enhancer(nn.Module):
 
 
     def train(self, write_log=False, valid_r=0.2):
+        self.configure_dataset()
+        self.configure_optimizer()
         config = self.config
         scheduler = self.scheduler
         n_epoch = int(config["iterations"]/min(config["iter-per-epoch"], len(self.train_dataloader)))

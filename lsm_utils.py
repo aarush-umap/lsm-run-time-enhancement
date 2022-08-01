@@ -13,13 +13,13 @@ from torchvision import transforms
 from pycromanager import Dataset as PDataset
 from tqdm import tqdm
 import random
-from skimage.metrics import peak_signal_noise_ratio
+from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 from pytorch_fid.fid_score import calculate_fid_given_paths
 from skimage.filters import threshold_otsu
 
 
-def compute_norm_range(dir, ext, percentiles=(0, 100), sample_r=0.1):
-    img_fnames = glob(path.join(dir, '*.'+ext))
+def compute_norm_range(in_dir, ext, percentiles=(0, 100), sample_r=0.1):
+    img_fnames = glob(path.join(in_dir, '*.'+ext))
     if sample_r < 1:
         img_fnames = random.sample(img_fnames, int(len(img_fnames)*sample_r))
     max_val = []
@@ -107,9 +107,20 @@ def eval_psnr(fnames, ref_fnames):
         output = img_as_uint(io.imread(output))
         ref = img_as_uint(io.imread(ref))
         if output.shape != ref.shape:
-            output = img_as_uint(transform.resize(output, ref.shape, order=1))
+            output = img_as_uint(transform.resize(output, ref.shape, order=3))
         psnr.append(peak_signal_noise_ratio(ref, output))
     return np.mean(np.asarray(psnr))
+
+
+def eval_ssim(fnames, ref_fnames):
+    ssim = []
+    for output, ref in tqdm(zip(fnames, ref_fnames)):
+        output = img_as_uint(io.imread(output))
+        ref = img_as_uint(io.imread(ref))
+        if output.shape != ref.shape:
+            output = img_as_uint(transform.resize(output, ref.shape, order=3))
+        ssim.append(structural_similarity(ref, output))
+    return np.mean(np.asarray(ssim))
 
 
 def eval_FID(in_dir, ref_dir, device='cpu', threads=0):

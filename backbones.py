@@ -124,6 +124,7 @@ class Discriminator(nn.Module):
         )
 
     def forward(self, x, ref):
+        ref = F.interpolate(ref, size=(x.shape[2], x.shape[3]), mode='bilinear')
         x = self.model(torch.cat((x, ref), 1))
         return x
 

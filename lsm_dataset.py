@@ -101,9 +101,10 @@ def data_loader(csv_path, batch_size, norm_range, threads=0, resolution=256):
 
 
 class ImagePairDataset(Dataset): 
-    def __init__(self, img_fnames, norm_range=None): 
+    def __init__(self, img_fnames, norm_range=None, norm_range_target=None): 
         self.img_fnames = img_fnames 
         self.norm_range = norm_range
+        self.norm_range_target = norm_range_target
     
     def __len__(self): return len(self.img_fnames) 
     
@@ -112,7 +113,7 @@ class ImagePairDataset(Dataset):
         img2 = io.imread(self.img_fnames[idx][1]) 
         if self.norm_range is not None:
             img1 = exposure.rescale_intensity(1.0*img1, in_range=(self.norm_range[0], self.norm_range[1]), out_range=(0, 1))
-            img2 = exposure.rescale_intensity(1.0*img2, in_range=(self.norm_range[0], self.norm_range[1]), out_range=(0, 1))
+            img2 = exposure.rescale_intensity(1.0*img2, in_range=(self.norm_range_target[0], self.norm_range_target[1]), out_range=(0, 1))
         img1 = img_as_float(img1) 
         img2 = img_as_float(img2) 
         img1 = torch.from_numpy(img1).float()[None, :] 
@@ -120,15 +121,15 @@ class ImagePairDataset(Dataset):
         return {'input': img1, 'target': img2}
 
         
-def prepare_train_valid_loader(file_dirs, norm_range, split=0.95, bs=64, nw=0, exclude_list=None): 
+def prepare_train_valid_loader(file_dirs, norm_range, norm_range_target, split=0.95, bs=64, nw=0, exclude_list=None): 
     if exclude_list is not None:
         file_dirs = [i for i in file_dirs if os.path.basename(i) in exclude_list]
     random.shuffle(file_dirs) 
     split_idx = int(np.floor(len(file_dirs)*split)) 
-    train_dataset = ImagePairDataset(file_dirs[:split_idx], norm_range) 
+    train_dataset = ImagePairDataset(file_dirs[:split_idx], norm_range, norm_range_target) 
     train_loader = DataLoader(train_dataset, batch_size=bs, num_workers=nw, shuffle=True) 
     if split>0: 
-        valid_dataset = ImagePairDataset(file_dirs[split_idx:], norm_range) 
+        valid_dataset = ImagePairDataset(file_dirs[split_idx:], norm_range, norm_range_target) 
         valid_loader = DataLoader(valid_dataset, batch_size=bs, num_workers=nw, shuffle=True) 
         return train_loader, valid_loader 
     else: valid_loader=None 
