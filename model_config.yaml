@@ -1,26 +1,26 @@
-adv-interval: 5
+adv-interval: 3
 average-factor: 50
 batch-size: 8
 blindspot-rate: 0.05
 cnn-base-channel: 8
 dataset: datasets/PA_2081b
-gan-lambda: 2
+gan-lambda: 5
 gpu: true
 image-channel: 1
 image-extension: tif
-iter-per-epoch: 250
-iterations: 50000
+iter-per-epoch: 200
+iterations: 200000
 learning-rate: 0.0001
-load-weights: null
+load-weights: supervised2022-08-07_13-02-52
 loss-gain: 1000
 norm-range:
 - 5420
-- 44945
+- 44017
 norm-range-target:
 - 6265
-- 38565
-only-pixel-loss: true
-percep-lambda: 0.2
+- 38567
+only-pixel-loss: false
+percep-lambda: 0.5
 resolution: 512
 test-interval: 5
 threads: 32

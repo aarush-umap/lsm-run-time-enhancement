@@ -247,7 +247,7 @@ class Enhancer(nn.Module):
         self.write_log(write_train=False)
         for epoch in tqdm(range(1, n_epoch+1)):
             self.train_epoch(epoch=epoch, total_epoch=n_epoch)   
-            scheduler.step()
+            # scheduler.step()
             if epoch % config["test-interval"] == 0:
                 self.test(epoch)
                 self.enhance(sampling=True, sample_rate=valid_r)
