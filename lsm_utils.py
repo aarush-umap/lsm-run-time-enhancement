@@ -19,6 +19,7 @@ from skimage.filters import threshold_otsu
 
 
 def compute_norm_range(in_dir, ext, percentiles=(0, 100), sample_r=0.1):
+    print(path.join(in_dir, '*.'+ext))
     img_fnames = glob(path.join(in_dir, '*.'+ext))
     if sample_r < 1:
         img_fnames = random.sample(img_fnames, int(len(img_fnames)*sample_r))

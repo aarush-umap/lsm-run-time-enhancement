@@ -8,15 +8,15 @@ blindspot-rate : 0.05
 average-factor : 50
 resolution : 512
 up-scale-factor : 2
-cnn-base-channel : 8
+cnn-base-channel : 16
 norm-range : [0, 65535]
 image-extension : tif
 threads : 32
 test-interval : 10
-loss-gain : 100
+loss-gain : 1000
 gan-lambda : 0.1
 percep-lambda : 0.01
 adv-interval : 10
 only-pixel-loss : False
-dataset : 'datasets/PA_2081b/test'
+dataset : 'datasets/PA_2081b/evaluation/input/'
 load-weights : null

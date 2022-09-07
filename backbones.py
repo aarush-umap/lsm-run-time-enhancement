@@ -84,6 +84,30 @@ class UNet(nn.Module):
         out = self.conv1(torch.cat((out, x0), 1))
         return out
 
+    
+class AutoEncoder(nn.Module):
+    def __init__(self, in_channels=1, out_channels=1, init_features=16, pretrained=False):
+        super(AutoEncoder, self).__init__()
+        self.down0 = nn.Sequential(ConvBlock(in_channels, init_features), DownBlock(init_features, init_features*2))
+        self.down1 = nn.Sequential(DownBlock(init_features*2, init_features*4), ConvBlock(init_features*4, init_features*4))
+        self.down2 = nn.Sequential(DownBlock(init_features*4, init_features*8), ConvBlock(init_features*8, init_features*8))
+        self.down3 = nn.Sequential(DownBlock(init_features*8, init_features*16), ConvBlock(init_features*16, init_features*16))
+        self.up3 = nn.Sequential(UpBlock(init_features*16, init_features*8), ConvBlock(init_features*8, init_features*8))
+        self.up2 = nn.Sequential(UpBlock(init_features*8, init_features*4), ConvBlock(init_features*4, init_features*4))
+        self.up1 = nn.Sequential(UpBlock(init_features*4, init_features*2), ConvBlock(init_features*2, init_features*2))        
+        self.up0 = nn.Sequential(UpBlock(init_features*2, out_channels)) 
+    
+    def forward(self, x): 
+        x = self.down0(x)  
+        x = self.down1(x) 
+        x = self.down2(x)
+        x = self.down3(x)
+        x = self.up3(x)
+        x = self.up2(x)
+        x = self.up1(x)
+        x = self.up0(x)
+        return x
+    
 
 class UpScale(nn.Module):
     def __init__(self, backbone, in_channels, out_channels, scale_factor=2):

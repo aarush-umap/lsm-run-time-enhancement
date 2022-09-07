@@ -11,7 +11,7 @@ image-extension: tif
 iter-per-epoch: 200
 iterations: 200000
 learning-rate: 0.0001
-load-weights: supervised2022-08-07_13-02-52
+load-weights: null
 loss-gain: 1000
 norm-range:
 - 5420
