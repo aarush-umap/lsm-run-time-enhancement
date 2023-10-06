@@ -1,0 +1,20 @@
+# Run command mamba env create -f environment.yml to install all necessary packages
+name: lsm-run-time-enhancement
+channels:
+    - conda-forge
+    - defaults
+dependencies:
+    - python=3.11
+    - scikit-image
+    - matplotlib
+    - pytorch torchvision pytorch-cuda=11.8 -c pytorch -c nvidia
+    - pandas
+    - tqdm
+    - tensorboard
+    - pip
+    - pip:
+        - pyyaml
+        - pycromanager
+        - pytorch-fid
+
+    
