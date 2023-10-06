@@ -29,11 +29,15 @@ def compute_norm_range(in_dir, ext, percentiles=(0, 100), sample_r=0.1):
     for fname in tqdm(img_fnames):
         try:
             img = img_as_uint(io.imread(fname))
-        except:
+        except Exception as e:
+            print(e)
             print(fname)
             fail_names.append(fname)
+
+        # Doesn't account for if img = None / unassigned    
         max_val.append(np.percentile(img, percentiles[1]))
         min_val.append(np.percentile(img, percentiles[0]))
+
     max_val = np.percentile(np.array(max_val), 98)
     min_val = np.percentile(np.array(min_val), 2)
     
